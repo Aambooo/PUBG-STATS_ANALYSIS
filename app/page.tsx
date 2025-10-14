@@ -3,6 +3,8 @@
 import { Search, TrendingUp, Users, Trophy, Target } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
+import AirdropViewer from '@/components/AirdropModel';
+
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -24,16 +26,33 @@ export default function HomePage() {
         playsInline
         className="absolute inset-0 object-cover w-full h-full opacity-30 z-0"
       >
-        {/*
-          IMPORTANT: Place your video file (e.g., hero-bg.mp4) in the `public/videos` directory.
-          The path will then be `/videos/hero-bg.mp4`.
-        */}
         <source src="/videos/hero-bg.mp4" type="video/mp4" />
         Your browser does not support the video tag.
       </video>
 
       {/* Dark overlay for text contrast */}
       <div className="absolute inset-0 bg-black opacity-60 z-10" />
+
+      {/* 3D Models on Left and Right - Hidden on mobile */}
+      <div className="absolute inset-0 z-15 hidden xl:block">
+        {/* Left 3D Model */}
+        <div className="absolute left-8 top-[180px] w-[220px] h-[280px] rounded-lg overflow-hidden">
+          <iframe
+            title="PUBG Mobile Air Drop - Left"
+            className="w-full h-full"
+            src="https://sketchfab.com/models/ed80ad57edd94dce94fcde85c5a277fe/embed?autostart=1&autospin=0.2&ui_theme=dark&ui_hint=0&ui_infos=0&ui_controls=1&ui_stop=0&preload=1&transparent=0&background=000000"
+            frameBorder="0"
+            allow="autoplay; fullscreen; xr-spatial-tracking"
+            allowFullScreen
+            style={{ pointerEvents: 'auto' }}
+          />
+        </div>
+
+        {/* Right 3D Model */}
+        <div className="absolute right-8 top-[180px] w-[220px] h-[280px] rounded-lg overflow-hidden">
+          <AirdropViewer />
+        </div>
+      </div>
 
       {/* Content wrapper */}
       <div className="relative z-20 container mx-auto px-4 py-20 flex flex-col justify-center items-center">
