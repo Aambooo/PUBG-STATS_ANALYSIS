@@ -18,38 +18,26 @@ export default function HomePage() {
 
   return (
     <div className="relative min-h-screen bg-neutral-950 text-neutral-200 overflow-hidden">
-      {/* Video Background */}
-      <video
-        autoPlay
-        muted
-        loop
-        playsInline
-        className="absolute inset-0 object-cover w-full h-full opacity-30 z-0"
-      >
-        <source src="/videos/hero-bg.mp4" type="video/mp4" />
-        Your browser does not support the video tag.
-      </video>
+      {/* Gradient Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950 z-0" />
+      
+      {/* Animated background pattern */}
+      <div className="absolute inset-0 opacity-20 z-0">
+        <div className="absolute inset-0" style={{
+          backgroundImage: 'radial-gradient(circle at 2px 2px, rgb(115, 115, 115) 1px, transparent 0)',
+          backgroundSize: '40px 40px'
+        }} />
+      </div>
 
-      {/* Dark overlay for text contrast */}
-      <div className="absolute inset-0 bg-black opacity-60 z-10" />
-
-      {/* 3D Models on Left and Right - Hidden on mobile */}
-      <div className="absolute inset-0 z-15 hidden xl:block">
+      {/* 3D Models on Left and Right */}
+      <div className="absolute inset-0 z-15 pointer-events-none">
         {/* Left 3D Model */}
-        <div className="absolute left-8 top-[180px] w-[220px] h-[280px] rounded-lg overflow-hidden">
-          <iframe
-            title="PUBG Mobile Air Drop - Left"
-            className="w-full h-full"
-            src="https://sketchfab.com/models/ed80ad57edd94dce94fcde85c5a277fe/embed?autostart=1&autospin=0.2&ui_theme=dark&ui_hint=0&ui_infos=0&ui_controls=1&ui_stop=0&preload=1&transparent=0&background=000000"
-            frameBorder="0"
-            allow="autoplay; fullscreen; xr-spatial-tracking"
-            allowFullScreen
-            style={{ pointerEvents: 'auto' }}
-          />
+        <div className="hidden lg:block absolute left-4 lg:left-8 top-[180px] w-[200px] lg:w-[220px] h-[260px] lg:h-[280px] rounded-lg overflow-hidden pointer-events-auto shadow-2xl">
+          <AirdropViewer />
         </div>
 
         {/* Right 3D Model */}
-        <div className="absolute right-8 top-[180px] w-[220px] h-[280px] rounded-lg overflow-hidden">
+        <div className="hidden lg:block absolute right-4 lg:right-8 top-[180px] w-[200px] lg:w-[220px] h-[260px] lg:h-[280px] rounded-lg overflow-hidden pointer-events-auto shadow-2xl">
           <AirdropViewer />
         </div>
       </div>
@@ -141,7 +129,7 @@ function FeatureCard({ icon, title, description, delay }: any) {
       className="group"
     >
       <div className="p-6 rounded-xl bg-neutral-900/50 backdrop-blur-md border border-neutral-700 hover:border-yellow-500 transition-all duration-300 hover:shadow-xl hover:shadow-yellow-500/10 hover:-translate-y-2 h-full flex flex-col">
-        <div className="flex items-center justify-center rounded-lg bg-yellow-500 text-neutral-950 mb-4">
+        <div className="flex items-center justify-center rounded-lg bg-yellow-500 text-neutral-950 mb-4 w-12 h-12">
           {icon}
         </div>
         <h3 className="text-xl font-bold text-white mb-2 uppercase font-['Oswald'] tracking-wider">{title}</h3>
