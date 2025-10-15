@@ -30,15 +30,29 @@ export default function HomePage() {
       </div>
 
       {/* 3D Models on Left and Right */}
-      <div className="absolute inset-0 z-15 pointer-events-none">
+      <div className="absolute inset-0 z-10 pointer-events-none">
         {/* Left 3D Model */}
-        <div className="hidden lg:block absolute left-4 lg:left-8 top-[180px] w-[200px] lg:w-[220px] h-[260px] lg:h-[280px] rounded-lg overflow-hidden pointer-events-auto shadow-2xl">
-          <AirdropViewer />
+        <div 
+          className="hidden lg:block absolute left-4 lg:left-8 top-[180px] w-[200px] lg:w-[220px] h-[260px] lg:h-[280px] rounded-lg" 
+          style={{ 
+            pointerEvents: 'auto',
+            background: 'transparent',
+            isolation: 'isolate'
+          }}
+        >
+          <AirdropViewer key="left-model-viewer" />
         </div>
 
         {/* Right 3D Model */}
-        <div className="hidden lg:block absolute right-4 lg:right-8 top-[180px] w-[200px] lg:w-[220px] h-[260px] lg:h-[280px] rounded-lg overflow-hidden pointer-events-auto shadow-2xl">
-          <AirdropViewer />
+        <div 
+          className="hidden lg:block absolute right-4 lg:right-8 top-[180px] w-[200px] lg:w-[220px] h-[260px] lg:h-[280px] rounded-lg" 
+          style={{ 
+            pointerEvents: 'auto',
+            background: 'transparent',
+            isolation: 'isolate'
+          }}
+        >
+          <AirdropViewer key="right-model-viewer" />
         </div>
       </div>
 
