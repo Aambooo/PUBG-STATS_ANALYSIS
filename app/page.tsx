@@ -89,9 +89,6 @@ export default function HomePage() {
                 <Search className="w-6 h-6 text-neutral-950" />
               </button>
             </div>
-            <p className="text-sm text-neutral-500 mt-3 font-['Archivo_Narrow']">
-              Try: shroud, chocoTaco, TGLTN
-            </p>
           </form>
         </motion.div>
 

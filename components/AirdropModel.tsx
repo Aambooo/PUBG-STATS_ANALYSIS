@@ -1,4 +1,4 @@
-'use client';
+ 'use client';
 
 import React, { Suspense, useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
@@ -8,7 +8,7 @@ import { OrbitControls, useGLTF } from '@react-three/drei';
 function AirdropModel() {
   const ref = useRef<any>(null);
   const { scene } = useGLTF('/models/example1.glb');
-  
+
   // Clone the scene to allow multiple instances
   const clonedScene = useMemo(() => scene.clone(), [scene]);
 
