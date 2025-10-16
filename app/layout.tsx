@@ -6,7 +6,7 @@ const oswald = Oswald({ subsets: ['latin'], variable: '--font-oswald' });
 const archivoNarrow = Archivo_Narrow({ subsets: ['latin'], variable: '--font-archivo-narrow' });
 
 export const metadata: Metadata = {
-  title: "PUBG Stats Tracker",
+  title: "STAT ARENA",
   description: "Track your PUBG PC performance",
 };
 

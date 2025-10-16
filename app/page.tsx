@@ -18,6 +18,15 @@ export default function HomePage() {
 
   return (
     <div className="relative min-h-screen bg-neutral-950 text-neutral-200 overflow-hidden">
+      {/* Navbar */}
+      <header className="fixed top-0 left-0 w-full z-30 bg-neutral-900/60 backdrop-blur-md border-b border-neutral-800">
+        <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-yellow-500 font-['Oswald'] tracking-wider">
+            STAT ARENA
+          </h1>
+        </div>
+      </header>
+
       {/* Gradient Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950 z-0" />
       
@@ -29,45 +38,31 @@ export default function HomePage() {
         }} />
       </div>
 
-      {/* 3D Models on Left and Right */}
-      <div className="absolute inset-0 z-10 pointer-events-none">
-        {/* Left 3D Model */}
-        <div 
-          className="hidden lg:block absolute left-4 lg:left-8 top-[180px] w-[200px] lg:w-[220px] h-[260px] lg:h-[280px] rounded-lg" 
-          style={{ 
-            pointerEvents: 'auto',
-            background: 'transparent',
-            isolation: 'isolate'
-          }}
-        >
-          <AirdropViewer key="left-model-viewer" />
-        </div>
-
-        {/* Right 3D Model */}
-        <div 
-          className="hidden lg:block absolute right-4 lg:right-8 top-[180px] w-[200px] lg:w-[220px] h-[260px] lg:h-[280px] rounded-lg" 
-          style={{ 
-            pointerEvents: 'auto',
-            background: 'transparent',
-            isolation: 'isolate'
-          }}
-        >
-          <AirdropViewer key="right-model-viewer" />
-        </div>
-      </div>
-
-      {/* Content wrapper */}
-      <div className="relative z-20 container mx-auto px-4 py-20 flex flex-col justify-center items-center">
+      {/* Content wrapper - MOVED UP IN Z-INDEX */}
+      <div className="relative z-10 container mx-auto px-4 pt-32 pb-20 flex flex-col justify-center items-center pointer-events-none">
         {/* Hero Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="text-center mb-16 max-w-4xl"
+          className="text-center mb-16 max-w-4xl pointer-events-auto"
         >
-          <h1 className="text-6xl md:text-7xl font-bold text-white mb-6 tracking-wide uppercase font-['Oswald']">
-            PUBG:BATTLEGROUNDS STATS
+          <h1
+            className="
+              text-3xl sm:text-4xl md:text-6xl lg:text-7xl
+              font-bold text-white mb-6
+              tracking-tight uppercase
+              font-['Oswald']
+              leading-[1.02] md:leading-tight
+              max-w-full
+              px-4
+              break-words
+              text-center
+            "
+          >
+            PUBG: BATTLEGROUNDS STATS
           </h1>
+
           <p className="text-lg md:text-xl text-neutral-400 mb-8 font-['Archivo_Narrow']">
             Track your performance, analyze your gameplay, dominate the battleground.
           </p>
@@ -93,7 +88,7 @@ export default function HomePage() {
         </motion.div>
 
         {/* Feature Cards */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mt-20">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mt-20 pointer-events-auto">
           <FeatureCard
             icon={<TrendingUp className="w-8 h-8" />}
             title="Performance"
@@ -121,8 +116,26 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* 3D Models on Left and Right - MOVED TO HIGHER Z-INDEX */}
+      <div className="absolute inset-0 z-20 pointer-events-none">
+
+        {/* Left 3D Model */}
+        <div 
+          className="hidden lg:block absolute left-4 lg:left-8 top-[180px] w-[200px] lg:w-[220px] h-[260px] lg:h-[280px] pointer-events-auto" 
+        >
+          <AirdropViewer />
+        </div>
+
+        {/* Right 3D Model */}
+        <div 
+          className="hidden lg:block absolute right-4 lg:right-8 top-[180px] w-[200px] lg:w-[220px] h-[260px] lg:h-[280px] pointer-events-auto" 
+        >
+          <AirdropViewer />
+        </div>
+      </div>
+
       {/* Footer */}
-      <footer className="relative z-20 border-t border-neutral-800 mt-20 py-8">
+      <footer className="relative z-30 border-t border-neutral-800 mt-20 py-8 pointer-events-auto">
         <div className="container mx-auto px-4 text-center text-neutral-500">
           <p>© 2024 BATTLEGROUNDS STATS. Powered by official PUBG API.</p>
         </div>

@@ -30,22 +30,16 @@ export default function AirdropViewer() {
       style={{ 
         width: '100%', 
         height: '100%', 
-        background: 'transparent',
-        position: 'relative'
+        position: 'relative',
+        pointerEvents: 'auto'
       }}
     >
       <Canvas 
         camera={{ position: [0, 0.5, 2.5], fov: 50 }}
         gl={{ 
           antialias: true,
-          alpha: true
-        }}
-        style={{ 
-          width: '100%', 
-          height: '100%',
-          display: 'block',
-          touchAction: 'none',
-          background: 'transparent'
+          alpha: true,
+          preserveDrawingBuffer: true
         }}
       >
         <ambientLight intensity={1} />
@@ -56,16 +50,13 @@ export default function AirdropViewer() {
           <AirdropModel />
         </Suspense>
         <OrbitControls 
-          makeDefault
-          enablePan={true}
-          enableZoom={true}
-          enableRotate={true}
-          minDistance={1.5}
-          maxDistance={5}
+          enablePan={false}   // disables moving the camera around
+          enableZoom={false}  // disables zoom in/out
+          enableRotate={true} // keep rotation enabled
           enableDamping={true}
           dampingFactor={0.05}
-          rotateSpeed={1}
         />
+
       </Canvas>
     </div>
   );
