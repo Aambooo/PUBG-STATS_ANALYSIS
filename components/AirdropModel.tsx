@@ -50,9 +50,9 @@ export default function AirdropViewer() {
           <AirdropModel />
         </Suspense>
         <OrbitControls 
-          enablePan={false}   // disables moving the camera around
-          enableZoom={false}  // disables zoom in/out
-          enableRotate={true} // keep rotation enabled
+          enablePan={false}
+          enableZoom={false} 
+          enableRotate={true}
           enableDamping={true}
           dampingFactor={0.05}
         />
