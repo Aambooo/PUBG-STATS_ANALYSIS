@@ -46,3 +46,15 @@ export async function getLeaderboard(seasonId: string, gameMode: string, shard: 
   const endpoint = `/${shard}/leaderboards/${seasonId}/${gameMode}`;
   return pubgFetch(endpoint);
 }
+// Get player's recent matches (from their match list)
+export async function getPlayerMatches(accountId: string, shard: string = 'steam') {
+  const endpoint = `/${shard}/players/${accountId}`;
+  const data = await pubgFetch(endpoint);
+  
+  // Return the match IDs from relationships
+  if (data.data && data.data.relationships && data.data.relationships.matches) {
+    return data.data.relationships.matches.data;
+  }
+  
+  return [];
+}
