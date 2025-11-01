@@ -104,7 +104,12 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
               {playerData.clanId && (
                 <div>
                   <p className="text-gray-400">Clan ID</p>
-                  <p className="text-white text-xl font-semibold">{playerData.clanId}</p>
+                  <a 
+                    href={`/team/${playerData.clanId}`}
+                    className="text-yellow-500 hover:text-yellow-400 text-xl font-semibold underline transition-colors"
+                  >
+                    View Team →
+                  </a>
                 </div>
               )}
             </div>
@@ -126,12 +131,19 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
                 {validMatches.map((match: any, index: number) => {
                   const matchData = match.data;
                   const matchAttrs = matchData.attributes;
-        
+
                   // Find the player's stats in this match
                   const participants = match.included?.filter((item: any) => item.type === 'participant') || [];
-                  const playerParticipant = participants.find((p: any) => 
-                    p.attributes.stats.playerId === playerId.replace('account.', '')
-                  );
+
+                  // Try multiple ways to match the player
+                  const cleanPlayerId = playerId.replace('account.', '');
+                  const playerParticipant = participants.find((p: any) => {
+                    const participantId = p.attributes.stats.playerId;
+                    // Try exact match, with/without 'account.' prefix
+                    return participantId === cleanPlayerId || 
+                           participantId === playerId ||
+                           `account.${participantId}` === playerId;
+                });
         
                   if (!playerParticipant) {
                     return (

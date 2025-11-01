@@ -58,3 +58,8 @@ export async function getPlayerMatches(accountId: string, shard: string = 'steam
   
   return [];
 }
+// Get clan information
+export async function getClanInfo(clanId: string, shard: string = 'steam') {
+  const endpoint = `/${shard}/clans/${clanId}`;
+  return pubgFetch(endpoint);
+}
