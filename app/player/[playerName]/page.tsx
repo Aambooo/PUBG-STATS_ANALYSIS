@@ -2,9 +2,9 @@ import { searchPlayer, getPlayerMatches } from '@/lib/pubg-api';
 import { notFound } from 'next/navigation';
 
 interface PlayerPageProps {
-  params: {
+  params: Promise<{
     playerName: string;
-  };
+  }>;
 }
 
 export default async function PlayerPage({ params }: PlayerPageProps) {
@@ -22,23 +22,35 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
     const player = result.data[0];
     const playerData = player.attributes;
     const playerId = player.id;
+    
     // Fetch player's recent matches
     const matchesData = await getPlayerMatches(playerId, 'steam');
     const recentMatches = matchesData.slice(0, 3); // Get last 3 matches
     
-        // Fetch detailed data for each of the 3 matches
-        const matchDetailsPromises = recentMatches.map(async (match: any) => {
-          try {
-            const response = await fetch(`http://localhost:3000/api/matches?matchId=${match.id}`);
-            const data = await response.json();
-            return data.success ? data.data : null;
-          } catch (error) {
-            return null;
-          }
-        });
-    
-        const matchDetails = await Promise.all(matchDetailsPromises);
-    
+    // Fetch detailed data for each of the 3 matches
+    const matchDetailsPromises = recentMatches.map(async (match: any) => {
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/matches?matchId=${match.id}&shard=steam`,
+          { cache: 'no-store' }
+        );
+        
+        if (!response.ok) {
+          console.error(`Failed to fetch match ${match.id}: ${response.status}`);
+          return null;
+        }
+        
+        const data = await response.json();
+        return data.success ? data.data : null;
+      } catch (error) {
+        console.error(`Error fetching match ${match.id}:`, error);
+        return null;
+      }
+    });
+
+    const matchDetails = await Promise.all(matchDetailsPromises);
+    const validMatches = matchDetails.filter(match => match !== null);
+
     return (
       <div className="relative min-h-screen bg-neutral-950 p-8 overflow-hidden">
         {/* Navbar*/}
@@ -49,6 +61,7 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
             </a>
           </div>
         </header>
+
         {/* Animated background pattern - same as homepage */}
         <div className="absolute inset-0 opacity-20 z-0">
           <div className="absolute inset-0" style={{
@@ -77,7 +90,7 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
           </div>
           
           {/* Basic Info Card */}
-          <div className="bg-neutral-900/50 backdrop-blur-md rounded-xl p-6 border border-neutral-700">
+          <div className="bg-neutral-900/50 backdrop-blur-md rounded-xl p-6 border border-neutral-700 mb-8">
             <h2 className="text-2xl font-bold text-white mb-4">Player Information</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -97,16 +110,20 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
             </div>
           </div>
           
-          {/* Coming Soon Section */}
           {/* Match History Section */}
-          <div className="mt-8 bg-neutral-900/50 backdrop-blur-md rounded-xl p-6 border border-neutral-700">
+          <div className="bg-neutral-900/50 backdrop-blur-md rounded-xl p-6 border border-neutral-700">
             <h2 className="text-2xl font-bold text-white mb-4">🎮 Recent Matches</h2>
   
-            {matchDetails.length > 0 ? (
+            {recentMatches.length === 0 ? (
+              <p className="text-gray-400">No recent matches found.</p>
+            ) : validMatches.length === 0 ? (
+              <div className="text-gray-400">
+                <p className="mb-2">Found {recentMatches.length} recent matches, but unable to load match details.</p>
+                <p className="text-sm text-gray-500">This may be due to API rate limiting or match data not being available yet.</p>
+              </div>
+            ) : (
               <div className="space-y-4">
-                {matchDetails.map((match: any, index: number) => {
-                  if (!match || !match.data) return null;
-        
+                {validMatches.map((match: any, index: number) => {
                   const matchData = match.data;
                   const matchAttrs = matchData.attributes;
         
@@ -116,7 +133,13 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
                     p.attributes.stats.playerId === playerId.replace('account.', '')
                   );
         
-                  if (!playerParticipant) return null;
+                  if (!playerParticipant) {
+                    return (
+                      <div key={matchData.id} className="bg-neutral-800/50 rounded-lg p-5 border border-neutral-700">
+                        <p className="text-gray-400">Unable to find player stats in this match</p>
+                      </div>
+                    );
+                  }
         
                   const stats = playerParticipant.attributes.stats;
         
@@ -167,8 +190,6 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
                   );
                 })}
               </div>
-            ) : (
-              <p className="text-gray-400">No recent matches found.</p>
             )}
           </div>
         </div>
