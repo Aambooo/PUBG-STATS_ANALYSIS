@@ -9,15 +9,29 @@ async function pubgFetch(endpoint: string) {
     throw new Error('PUBG_API_KEY is not configured');
   }
 
-  const response = await fetch(`${PUBG_API_BASE_URL}${endpoint}`, {
+  const url = `${PUBG_API_BASE_URL}${endpoint}`;
+  console.log('Fetching:', url);
+
+  const response = await fetch(url, {
     headers: {
       'Authorization': `Bearer ${PUBG_API_KEY}`,
       'Accept': 'application/vnd.api+json',
     },
   });
 
+  console.log('Response status:', response.status, response.statusText);
+
   if (!response.ok) {
-    throw new Error(`PUBG API Error: ${response.status} ${response.statusText}`);
+    // Try to get the error body
+    let errorBody = '';
+    try {
+      errorBody = await response.text();
+      console.log('Error response body:', errorBody);
+    } catch (e) {
+      console.log('Could not read error body');
+    }
+    
+    throw new Error(`PUBG API Error: ${response.status} ${response.statusText} - ${errorBody}`);
   }
 
   return response.json();
@@ -44,6 +58,9 @@ export async function getMatchDetails(matchId: string, shard: string = 'steam') 
 // Get leaderboard
 export async function getLeaderboard(seasonId: string, gameMode: string, shard: string = 'steam') {
   const endpoint = `/${shard}/leaderboards/${seasonId}/${gameMode}`;
+  
+  console.log('Full PUBG API URL:', `${PUBG_API_BASE_URL}${endpoint}`);
+  
   return pubgFetch(endpoint);
 }
 // Get player's recent matches (from their match list)
@@ -61,5 +78,11 @@ export async function getPlayerMatches(accountId: string, shard: string = 'steam
 // Get clan information
 export async function getClanInfo(clanId: string, shard: string = 'steam') {
   const endpoint = `/${shard}/clans/${clanId}`;
+  return pubgFetch(endpoint);
+}
+
+// Get available seasons
+export async function getSeasons(shard: string = 'steam') {
+  const endpoint = `/${shard}/seasons`;
   return pubgFetch(endpoint);
 }
