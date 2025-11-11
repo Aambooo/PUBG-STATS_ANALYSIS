@@ -88,7 +88,7 @@ export default function HomePage() {
         </motion.div>
 
         {/* Feature Cards */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mt-20 pointer-events-auto">
+        <div className="grid md:grid-cols-3 gap-8 mt-20 justify-center pointer-events-auto">
           <FeatureCard
             icon={<TrendingUp className="w-8 h-8" />}
             title="Performance"
@@ -102,16 +102,10 @@ export default function HomePage() {
             delay={0.4}
           />
           <FeatureCard
-            icon={<Trophy className="w-8 h-8" />}
-            title="Leaderboards"
-            description="See top 500 players per season"
-            delay={0.6}
-          />
-          <FeatureCard
             icon={<Target className="w-8 h-8" />}
             title="Match History"
             description="Detailed analysis of recent matches"
-            delay={0.8}
+            delay={0.6}
           />
         </div>
       </div>
