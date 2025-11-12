@@ -1,59 +1,34 @@
-import { searchPlayer, getPlayerMatches } from '@/lib/pubg-api';
+import { searchPlayer } from '@/lib/pubg-api';
 import { notFound } from 'next/navigation';
+import PlayerMatches from '@/components/PlayerMatches';
+import SeasonStats from '@/components/SeasonStats';
+import MatchTrends from '@/components/MatchTrends';
+
+
 
 interface PlayerPageProps {
-  params: Promise<{
-    playerName: string;
-  }>;
+  params: { playerName: string };
 }
 
 export default async function PlayerPage({ params }: PlayerPageProps) {
-  const { playerName } = await params;
-  
+  const { playerName } = params;
+
   try {
     // Search for the player
     const result = await searchPlayer(playerName, 'steam');
-    
+
     // Check if player was found
     if (!result.data || result.data.length === 0) {
       notFound();
     }
-    
+
     const player = result.data[0];
     const playerData = player.attributes;
     const playerId = player.id;
-    
-    // Fetch player's recent matches
-    const matchesData = await getPlayerMatches(playerId, 'steam');
-    const recentMatches = matchesData.slice(0, 3); // Get last 3 matches
-    
-    // Fetch detailed data for each of the 3 matches
-    const matchDetailsPromises = recentMatches.map(async (match: any) => {
-      try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/matches?matchId=${match.id}&shard=steam`,
-          { cache: 'no-store' }
-        );
-        
-        if (!response.ok) {
-          console.error(`Failed to fetch match ${match.id}: ${response.status}`);
-          return null;
-        }
-        
-        const data = await response.json();
-        return data.success ? data.data : null;
-      } catch (error) {
-        console.error(`Error fetching match ${match.id}:`, error);
-        return null;
-      }
-    });
-
-    const matchDetails = await Promise.all(matchDetailsPromises);
-    const validMatches = matchDetails.filter(match => match !== null);
 
     return (
       <div className="relative min-h-screen bg-neutral-950 p-8 overflow-hidden">
-        {/* Navbar*/}
+        {/* Navbar */}
         <header className="fixed top-0 left-0 right-0 z-30 bg-neutral-900/60 backdrop-blur-md border-b border-neutral-800">
           <div className="w-full px-6 py-4 flex justify-between items-center">
             <a href="/" className="text-2xl font-bold text-yellow-500 font-['Oswald'] tracking-wider">
@@ -64,16 +39,20 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
 
         {/* Animated background pattern - same as homepage */}
         <div className="absolute inset-0 opacity-20 z-0">
-          <div className="absolute inset-0" style={{
-            backgroundImage: 'radial-gradient(circle at 2px 2px, rgb(115, 115, 115) 1px, transparent 0)',
-            backgroundSize: '40px 40px'
-          }} />
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage:
+                'radial-gradient(circle at 2px 2px, rgb(115, 115, 115) 1px, transparent 0)',
+              backgroundSize: '40px 40px',
+            }}
+          />
         </div>
 
         {/* Content wrapper */}
         <div className="relative z-10 max-w-7xl mx-auto pt-24">
           {/* Back Button */}
-          <a 
+          <a
             href="/"
             className="inline-flex items-center gap-2 text-yellow-500 hover:text-yellow-400 mb-6 transition-colors"
           >
@@ -83,12 +62,10 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
 
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-5xl font-bold text-white mb-2">
-              {playerData.name}
-            </h1>
+            <h1 className="text-5xl font-bold text-white mb-2">{playerData.name}</h1>
             <p className="text-gray-400">Player ID: {playerId}</p>
           </div>
-          
+
           {/* Basic Info Card */}
           <div className="bg-neutral-900/50 backdrop-blur-md rounded-xl p-6 border border-neutral-700 mb-8">
             <h2 className="text-2xl font-bold text-white mb-4">Player Information</h2>
@@ -104,7 +81,7 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
               {playerData.clanId && (
                 <div>
                   <p className="text-gray-400">Clan ID</p>
-                  <a 
+                  <a
                     href={`/team/${playerData.clanId}`}
                     className="text-yellow-500 hover:text-yellow-400 text-xl font-semibold underline transition-colors"
                   >
@@ -114,95 +91,21 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
               )}
             </div>
           </div>
-          
-          {/* Match History Section */}
+
+          {/* Season Stats (live) */}
+          <div className="bg-neutral-900/50 backdrop-blur-md rounded-xl p-6 border border-neutral-700 mb-8">
+            <SeasonStats playerId={playerId} shard="steam" />
+          </div>
+
+          {/* Match Trends (chart) */}
+          <div className="bg-neutral-900/50 backdrop-blur-md rounded-xl p-6 border border-neutral-700 mb-8">
+            <MatchTrends playerName={playerData.name} limit={20} />
+          </div>
+
+
+          {/* Match History Section (cached, up to 20) */}
           <div className="bg-neutral-900/50 backdrop-blur-md rounded-xl p-6 border border-neutral-700">
-            <h2 className="text-2xl font-bold text-white mb-4">🎮 Recent Matches</h2>
-  
-            {recentMatches.length === 0 ? (
-              <p className="text-gray-400">No recent matches found.</p>
-            ) : validMatches.length === 0 ? (
-              <div className="text-gray-400">
-                <p className="mb-2">Found {recentMatches.length} recent matches, but unable to load match details.</p>
-                <p className="text-sm text-gray-500">This may be due to API rate limiting or match data not being available yet.</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {validMatches.map((match: any, index: number) => {
-                  const matchData = match.data;
-                  const matchAttrs = matchData.attributes;
-
-                  // Find the player's stats in this match
-                  const participants = match.included?.filter((item: any) => item.type === 'participant') || [];
-
-                  // Try multiple ways to match the player
-                  const cleanPlayerId = playerId.replace('account.', '');
-                  const playerParticipant = participants.find((p: any) => {
-                    const participantId = p.attributes.stats.playerId;
-                    // Try exact match, with/without 'account.' prefix
-                    return participantId === cleanPlayerId || 
-                           participantId === playerId ||
-                           `account.${participantId}` === playerId;
-                });
-        
-                  if (!playerParticipant) {
-                    return (
-                      <div key={matchData.id} className="bg-neutral-800/50 rounded-lg p-5 border border-neutral-700">
-                        <p className="text-gray-400">Unable to find player stats in this match</p>
-                      </div>
-                    );
-                  }
-        
-                  const stats = playerParticipant.attributes.stats;
-        
-                  return (
-                    <div 
-                      key={matchData.id} 
-                      className="bg-neutral-800/50 rounded-lg p-5 border border-neutral-700 hover:border-yellow-500/50 transition-colors"
-                    >
-                      {/* Match Header */}
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <h3 className="text-white font-bold text-lg">
-                            {matchAttrs.mapName} - {matchAttrs.gameMode}
-                          </h3>
-                          <p className="text-gray-400 text-sm">
-                            {new Date(matchAttrs.createdAt).toLocaleDateString()} at {new Date(matchAttrs.createdAt).toLocaleTimeString()}
-                          </p>
-                        </div>
-                        <div className={`px-3 py-1 rounded-lg font-bold ${
-                          stats.winPlace === 1 
-                            ? 'bg-yellow-500/20 text-yellow-500 border border-yellow-500' 
-                            : 'bg-neutral-700 text-white'
-                        }`}>
-                          #{stats.winPlace}
-                        </div>
-                      </div>
-            
-                      {/* Stats Grid */}
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div>
-                          <p className="text-gray-400 text-sm">Kills</p>
-                          <p className="text-white text-2xl font-bold">{stats.kills}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-400 text-sm">Damage</p>
-                          <p className="text-white text-2xl font-bold">{Math.round(stats.damageDealt)}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-400 text-sm">Survival Time</p>
-                          <p className="text-white text-2xl font-bold">{Math.round(stats.timeSurvived / 60)}m</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-400 text-sm">Distance</p>
-                          <p className="text-white text-2xl font-bold">{(stats.rideDistance / 1000).toFixed(1)}km</p>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            <PlayerMatches playerName={playerData.name} limit={20} />
           </div>
         </div>
       </div>
@@ -212,17 +115,21 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
       <div className="relative min-h-screen bg-neutral-950 flex items-center justify-center p-8 overflow-hidden">
         {/* Animated background pattern for error page too */}
         <div className="absolute inset-0 opacity-20 z-0">
-          <div className="absolute inset-0" style={{
-            backgroundImage: 'radial-gradient(circle at 2px 2px, rgb(115, 115, 115) 1px, transparent 0)',
-            backgroundSize: '40px 40px'
-          }} />
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage:
+                'radial-gradient(circle at 2px 2px, rgb(115, 115, 115) 1px, transparent 0)',
+              backgroundSize: '40px 40px',
+            }}
+          />
         </div>
 
         <div className="relative z-10 bg-red-500/10 backdrop-blur-xl rounded-xl p-8 border border-red-500/20 max-w-md">
           <h1 className="text-3xl font-bold text-red-500 mb-4">Error</h1>
           <p className="text-white mb-2">Failed to fetch player data.</p>
           <p className="text-gray-400 text-sm">{error.message}</p>
-          <a 
+          <a
             href="/"
             className="inline-flex items-center gap-2 text-yellow-500 hover:text-yellow-400 mt-6 transition-colors"
           >

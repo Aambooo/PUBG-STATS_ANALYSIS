@@ -19,18 +19,18 @@ model PubgApi {
   apiKey      String   @map("api_key")
   dataSource  String   @map("data_source")
   lastUpdated DateTime @default(now()) @map("last_updated")
-  
+
   @@map("pubg_api")
 }
 
 model Player {
-  id        String   @id @map("player_id")
-  name      String   @map("player_name")
-  teamName  String?  @map("team_name")
-  region    String
-  
-  stats     PlayerStat[]
-  
+  id       String  @id @map("player_id")
+  name     String  @map("player_name")
+  teamName String? @map("team_name")
+  region   String
+
+  stats PlayerStat[]
+
   @@map("players")
 }
 
@@ -38,18 +38,18 @@ model Team {
   id            String   @id @map("team_id")
   name          String   @map("team_name")
   formationDate DateTime @map("formation_date")
-  
+
   @@map("teams")
 }
 
 model Match {
-  id        String   @id @map("match_id")
-  date      DateTime @map("match_date")
-  gameMode  String   @map("game_mode")
-  mapName   String   @map("map_name")
-  
-  stats     PlayerStat[]
-  
+  id       String   @id @map("match_id")
+  date     DateTime @map("match_date")
+  gameMode String   @map("game_mode")
+  mapName  String   @map("map_name")
+
+  stats PlayerStat[]
+
   @@map("matches")
 }
 
@@ -61,10 +61,10 @@ model PlayerStat {
   deaths     Int
   damage     Int
   rankPoints Int    @map("rank_points")
-  
-  player     Player @relation(fields: [playerId], references: [id])
-  match      Match  @relation(fields: [matchId], references: [id])
-  
+
+  player Player @relation(fields: [playerId], references: [id])
+  match  Match  @relation(fields: [matchId], references: [id])
+
   @@map("player_stats")
 }
 
@@ -75,7 +75,7 @@ model ContactRequest {
   message     String   @db.Text
   requestDate DateTime @default(now()) @map("request_date")
   status      String   @default("pending")
-  
+
   @@map("contact_requests")
 }
 
@@ -87,6 +87,29 @@ model Banner {
   startDate   DateTime @map("start_date")
   endDate     DateTime @map("end_date")
   clicks      Int      @default(0)
-  
+
   @@map("banners")
+}
+
+model PlayerCacheMeta {
+  id            Int      @id @default(autoincrement())
+  playerName    String
+  shard         String   @default("steam")
+  lastFetchedAt DateTime @default(now())
+
+  @@unique([playerName, shard])
+  @@map("player_cache_meta")
+}
+
+model PlayerMatchCache {
+  id         Int      @id @default(autoincrement())
+  playerName String
+  shard      String   @default("steam")
+  matchId    String
+  data       Json // raw match JSON from PUBG API
+  createdAt  DateTime @default(now())
+
+  @@unique([playerName, shard, matchId])
+  @@index([playerName, shard, createdAt])
+  @@map("player_match_cache")
 }

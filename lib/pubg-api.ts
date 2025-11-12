@@ -68,3 +68,39 @@ export async function getClanInfo(clanId: string, shard: string = 'steam') {
   const endpoint = `/${shard}/clans/${clanId}`;
   return pubgFetch(endpoint);
 }
+export async function searchPlayerRaw(playerName: string, shard: string) {
+  const res = await fetch(`https://api.pubg.com/shards/${shard}/players?filter[playerNames]=${encodeURIComponent(playerName)}`, {
+    headers: { Authorization: `Bearer ${process.env.PUBG_API_KEY}`, Accept: 'application/vnd.api+json' },
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error(`PUBG players failed: ${res.status}`);
+  return res.json();
+}
+// get the current season id for a shard
+export async function getCurrentSeasonId(shard: string) {
+  const res = await fetch(`https://api.pubg.com/shards/${shard}/seasons`, {
+    headers: {
+      Authorization: `Bearer ${process.env.PUBG_API_KEY}`,
+      Accept: 'application/vnd.api+json',
+    },
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error(`PUBG seasons failed: ${res.status}`);
+  const json = await res.json();
+  const current = (json?.data || []).find((s: any) => s.attributes?.isCurrentSeason);
+  return current?.id as string | undefined;
+}
+
+// get a player's season stats (solo/duo/squad) for a given season
+export async function getPlayerSeasonStats(playerId: string, shard: string, seasonId: string) {
+  const url = `https://api.pubg.com/shards/${shard}/players/${playerId}/seasons/${seasonId}`;
+  const res = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${process.env.PUBG_API_KEY}`,
+      Accept: 'application/vnd.api+json',
+    },
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error(`PUBG season stats failed: ${res.status}`);
+  return res.json(); // raw JSON – we'll shape it in the component
+}

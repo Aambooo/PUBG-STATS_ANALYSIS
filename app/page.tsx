@@ -4,6 +4,8 @@ import { Search, TrendingUp, Users, Trophy, Target } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import AirdropViewer from '@/components/AirdropModel';
+import BannerCarousel from '@/components/BannerCarousel';
+
 
 
 export default function HomePage() {
@@ -126,6 +128,11 @@ export default function HomePage() {
         >
           <AirdropViewer />
         </div>
+      </div>
+
+      {/* Banner Carousel */}
+      <div className="relative z-30 mt-24 mb-12 pointer-events-auto w-full flex justify-center">
+        <BannerCarousel />
       </div>
 
       {/* Footer */}
