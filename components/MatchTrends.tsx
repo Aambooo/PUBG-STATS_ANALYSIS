@@ -7,9 +7,19 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
+  Tooltip as LineTooltip,
   ResponsiveContainer,
   Legend,
+} from 'recharts';
+
+// NEW imports for Radar (pentagon) chart
+import {
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Tooltip as RadarTooltip,
 } from 'recharts';
 
 type ApiResp = {
@@ -56,7 +66,7 @@ export default function MatchTrends({
   const [data, setData] = useState<ApiResp | null>(null);
   const [loading, setLoading] = useState(true);
   const [metric, setMetric] = useState<'kills' | 'damage' | 'adr'>('kills');
-  const [warming, setWarming] = useState(false); // true while polling for fresh cache
+  const [warming, setWarming] = useState(false); // polling banner
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // ----- helpers -----
@@ -77,30 +87,24 @@ export default function MatchTrends({
   };
 
   const startPollingUntilReady = () => {
-    // poll up to ~1 minute (6 attempts x 10s)
     let tries = 0;
     setWarming(true);
-
-    // clear any previous polling
     if (pollRef.current) clearInterval(pollRef.current);
 
     pollRef.current = setInterval(async () => {
       tries += 1;
       try {
         const json = await fetchCached();
-        // stop when we actually have matches (cache filled) or became non-stale
         if ((json.matches?.length ?? 0) > 0 && !json.stale) {
           setData(json);
           setWarming(false);
           if (pollRef.current) clearInterval(pollRef.current);
         } else if (tries >= 6) {
-          // give up after ~1 minute
           setData(json);
           setWarming(false);
           if (pollRef.current) clearInterval(pollRef.current);
         }
       } catch {
-        // ignore; keep polling until max tries
         if (tries >= 6 && pollRef.current) {
           clearInterval(pollRef.current);
           setWarming(false);
@@ -117,12 +121,9 @@ export default function MatchTrends({
         const json = await fetchCached();
         setData(json);
 
-        // If cache is empty or flagged stale, kick a background refresh AND start polling.
         const noMatches = !json.matches || json.matches.length === 0;
         if (noMatches || json.stale) {
-          // fire a refresh (await it so the server populates cache asap)
           await fetchWithRefresh();
-          // then poll until the DB has the fresh data
           startPollingUntilReady();
         }
       } finally {
@@ -130,7 +131,6 @@ export default function MatchTrends({
       }
     })();
 
-    // cleanup on unmount
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
@@ -147,7 +147,7 @@ export default function MatchTrends({
     );
   }
 
-  // ----- rows -----
+  // ----- rows from cached matches -----
   const rows =
     (data?.matches ?? [])
       .slice()
@@ -173,11 +173,6 @@ export default function MatchTrends({
         };
       });
 
-  const labelFmt = (label: unknown) => {
-    const i = Math.max(0, Number(label) - 1);
-    return rows[i]?.label ?? `Match ${label as string}`;
-  };
-
   const colorMap = {
     kills: '#fbbf24', // yellow
     damage: '#60a5fa', // blue
@@ -192,8 +187,7 @@ export default function MatchTrends({
 
   // ---- summary numbers for the current metric ----
   const values = rows.map((r) => r[metric] as number);
-  const avg =
-    values.length ? +(values.reduce((a, b) => a + b, 0) / values.length).toFixed(1) : 0;
+  const avg = values.length ? +(values.reduce((a, b) => a + b, 0) / values.length).toFixed(1) : 0;
   const best = values.length ? Math.max(...values) : 0;
   const last = values.length ? values[values.length - 1] : 0;
 
@@ -213,7 +207,7 @@ export default function MatchTrends({
 
     const lines = rows.map((r) => [
       r.idx,
-      r.label,          // already Nepal time
+      r.label,
       r.mapName,
       r.gameMode,
       r.kills,
@@ -228,12 +222,9 @@ export default function MatchTrends({
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     };
 
-    const csv =
-      [headers, ...lines]
-        .map((row) => row.map(toCsv).join(','))
-        .join('\n');
+    const csv = [headers, ...lines].map((row) => row.map(toCsv).join(',')).join('\n');
 
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' }); // BOM for Excel
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -244,12 +235,36 @@ export default function MatchTrends({
     URL.revokeObjectURL(url);
   };
 
+  // ====== RADAR (PENTAGON) DATA ======
+  // We normalize each metric to 0–100 so the pentagon shape is meaningful.
+  // Caps are sensible PUBG values for "good game" ceilings.
+  const cap = {
+    kills: 12,         // per match
+    damage: 1000,      // per match
+    adr: 600,          // dmg/min
+    survivalMin: 30,   // minutes
+    distanceKm: 10,    // km travelled
+  };
+  const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
+
+  const avgKills       = rows.length ? +(rows.reduce((s, r) => s + r.kills, 0) / rows.length).toFixed(1) : 0;
+  const avgDamage      = rows.length ? +(rows.reduce((s, r) => s + r.damage, 0) / rows.length).toFixed(0) : 0;
+  const avgADR         = rows.length ? +(rows.reduce((s, r) => s + r.adr, 0) / rows.length).toFixed(1) : 0;
+  const avgSurvivalMin = rows.length ? +(rows.reduce((s, r) => s + r.survivalMin, 0) / rows.length).toFixed(1) : 0;
+  const avgDistanceKm  = rows.length ? +(rows.reduce((s, r) => s + r.distanceKm, 0) / rows.length).toFixed(1) : 0;
+
+  const radarData = [
+    { label: 'Kills',        score: Math.round(clamp01(avgKills / cap.kills) * 100),       raw: avgKills,       unit: '' },
+    { label: 'Damage',       score: Math.round(clamp01(avgDamage / cap.damage) * 100),     raw: avgDamage,      unit: '' },
+    { label: 'ADR',          score: Math.round(clamp01(avgADR / cap.adr) * 100),           raw: avgADR,         unit: '' },
+    { label: 'Survival (m)', score: Math.round(clamp01(avgSurvivalMin / cap.survivalMin) * 100), raw: avgSurvivalMin, unit: 'm' },
+    { label: 'Distance (km)',score: Math.round(clamp01(avgDistanceKm / cap.distanceKm) * 100),   raw: avgDistanceKm,  unit: 'km' },
+  ];
+
   return (
     <div className="rounded-xl border border-neutral-800 p-6">
       <div className="flex flex-wrap items-center justify-between mb-4 gap-2">
-        <h2 className="text-xl font-bold text-white">
-          Match Trends (last {limit})
-        </h2>
+        <h2 className="text-xl font-bold text-white">Match Trends (last {limit})</h2>
 
         <div className="flex items-center gap-2">
           {/* Download */}
@@ -278,15 +293,15 @@ export default function MatchTrends({
         </div>
       </div>
 
-      {/* Warming banner while waiting for background refresh to fill cache */}
+      {/* Warming banner */}
       {warming && (
         <div className="mb-3 rounded-lg border border-yellow-500/30 bg-yellow-500/10 text-yellow-200 p-3 text-sm">
-          Fetching fresh match data… this can take ~20–60 seconds on a new player. The chart will update automatically.
+          Fetching fresh match data… this can take ~20–60 seconds on a new player. The charts will update automatically.
         </div>
       )}
 
       {/* Summary chips */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
         <div className="rounded-lg bg-neutral-900/60 border border-neutral-800 p-3">
           <div className="text-neutral-400 text-xs">Average</div>
           <div className="text-white text-lg font-bold">{avg}</div>
@@ -301,7 +316,7 @@ export default function MatchTrends({
         </div>
       </div>
 
-      <div className="text-sm text-neutral-400 mb-3">
+      <div className="text-sm text-neutral-400 mb-4">
         {data?.lastFetchedAt
           ? `Updated ${new Date(data.lastFetchedAt).toLocaleString(undefined, {
               timeZone: 'Asia/Kathmandu',
@@ -309,41 +324,95 @@ export default function MatchTrends({
           : ''}
       </div>
 
+      {/* === CHARTS LAYOUT === */}
       {!rows.length ? (
         <p className="text-neutral-400">No matches to chart yet.</p>
       ) : (
-        <div className="h-72">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={rows} margin={{ top: 10, right: 20, bottom: 0, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="idx"
-                tick={{ fill: '#aaa' }}
-                label={{
-                  value: 'Match (old → new)',
-                  position: 'insideBottom',
-                  offset: -2,
-                  fill: '#aaa',
-                }}
-              />
-              <YAxis tick={{ fill: '#aaa' }} />
-              <Tooltip
-                contentStyle={{ backgroundColor: '#111', border: '1px solid #333' }}
-                labelFormatter={((label: unknown) => {
-                  const i = Math.max(0, Number(label) - 1);
-                  return rows[i]?.label ?? `Match ${label as string}`;
-                }) as unknown as any}
-              />
-              <Legend />
-              <Line
-                type="monotone"
-                dataKey={metric}
-                name={{ kills: 'Kills', damage: 'Damage', adr: 'ADR (Damage per Min)' }[metric]}
-                stroke={{ kills: '#fbbf24', damage: '#60a5fa', adr: '#34d399' }[metric]}
-                dot={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-stretch">
+          {/* Line chart (takes 2/3 width on xl) */}
+          <div className="xl:col-span-2 h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={rows} margin={{ top: 10, right: 20, bottom: 0, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="idx"
+                  tick={{ fill: '#aaa' }}
+                  label={{
+                    value: 'Match (old → new)',
+                    position: 'insideBottom',
+                    offset: -2,
+                    fill: '#aaa',
+                  }}
+                />
+                <YAxis tick={{ fill: '#aaa' }} />
+                <LineTooltip
+                  contentStyle={{ backgroundColor: '#111', border: '1px solid #333' }}
+                  labelFormatter={((label: unknown) => {
+                    const i = Math.max(0, Number(label) - 1);
+                    return rows[i]?.label ?? `Match ${label as string}`;
+                  }) as unknown as any}
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey={metric}
+                  name={{ kills: 'Kills', damage: 'Damage', adr: 'ADR (Damage per Min)' }[metric]}
+                  stroke={{ kills: '#fbbf24', damage: '#60a5fa', adr: '#34d399' }[metric]}
+                  dot={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Radar (pentagon) chart (1/3 width on xl) */}
+          <div className="xl:col-span-1">
+            <div className="rounded-lg bg-neutral-900/60 border border-neutral-800 p-4 h-80">
+              <div className="text-neutral-300 text-sm mb-2 font-semibold">Performance Snapshot</div>
+              <ResponsiveContainer width="100%" height="80%">
+                <RadarChart data={radarData} outerRadius="80%">
+                  <PolarGrid stroke="#333" />
+                  <PolarAngleAxis dataKey="label" tick={{ fill: '#aaa', fontSize: 12 }} />
+                  <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: '#666', fontSize: 10 }} />
+                  <Radar
+                    name="Score"
+                    dataKey="score"
+                    stroke="#fbbf24"
+                    fill="#fbbf24"
+                    fillOpacity={0.25}
+                  />
+                  <RadarTooltip
+                    contentStyle={{ backgroundColor: '#111', border: '1px solid #333', color: '#ddd' }}
+                    formatter={((value: any, _name: any, props: any) => {
+                      // show the real average value with unit
+                      const raw = props?.payload?.raw;
+                      const unit = props?.payload?.unit ?? '';
+                      return [`${value} / 100`, `Avg: ${raw}${unit}`];
+                    }) as any}
+                  />
+                </RadarChart>
+              </ResponsiveContainer>
+
+              {/* mini legend with raw averages */}
+              <div className="mt-1 grid grid-cols-2 gap-x-4 gap-y-0 text-[11px] leading-tight text-neutral-400">
+                <div className="whitespace-nowrap">
+                  Kills: <span className="text-neutral-100">{avgKills}</span>
+                </div>
+                <div className="whitespace-nowrap">
+                  Damage: <span className="text-neutral-100">{avgDamage}</span>
+                </div>
+                <div className="whitespace-nowrap">
+                  ADR: <span className="text-neutral-100">{avgADR}</span>
+                </div>
+                <div className="whitespace-nowrap">
+                  Surv: <span className="text-neutral-100">{avgSurvivalMin}m</span>
+                </div>
+                <div className="whitespace-nowrap">
+                  Dist: <span className="text-neutral-100">{avgDistanceKm}km</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
         </div>
       )}
     </div>
