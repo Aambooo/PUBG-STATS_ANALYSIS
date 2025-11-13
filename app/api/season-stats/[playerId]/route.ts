@@ -4,12 +4,15 @@ import { getCurrentSeasonId, getPlayerSeasonStats } from '@/lib/pubg-api';
 
 export async function GET(
   req: NextRequest,
-  context: { params: { playerId: string } }
+  context: { params: Promise<{ playerId: string }> }
 ) {
   try {
+    // Await the params
+    const params = await context.params;
+    const playerId = decodeURIComponent(params.playerId);
+    
     const url = new URL(req.url);
     const shard = url.searchParams.get('shard') ?? 'steam';
-    const playerId = decodeURIComponent(context.params.playerId);
 
     // 1) which season is current?
     const seasonId = await getCurrentSeasonId(shard);
