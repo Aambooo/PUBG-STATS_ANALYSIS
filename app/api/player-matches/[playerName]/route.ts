@@ -1,24 +1,31 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { refreshPlayerMatches } from '@/lib/cache/refreshPlayerMatches';
 
 const STALE_MS = 6 * 60 * 60 * 1000; // 6h
 
-export async function GET(req: Request, { params }: { params: { playerName: string } }) {
+// Note: use NextRequest + a very loose type for context so Vercel's type check is happy
+export async function GET(
+  req: NextRequest,
+  context: { params: { playerName: string } } | any
+) {
   try {
     const url = new URL(req.url);
     const shard = url.searchParams.get('shard') ?? 'steam';
     const limit = Number(url.searchParams.get('limit') ?? '20');
     const force = url.searchParams.get('refresh') === '1';
 
-    const playerName = decodeURIComponent(params.playerName);
+    const playerName = decodeURIComponent(
+      context.params?.playerName ?? ''
+    );
 
     // read freshness meta
     let meta = await prisma.playerCacheMeta.findUnique({
       where: { playerName_shard: { playerName, shard } },
     });
 
-    const isStale = !meta || Date.now() - new Date(meta.lastFetchedAt).getTime() > STALE_MS;
+    const isStale =
+      !meta || Date.now() - new Date(meta.lastFetchedAt).getTime() > STALE_MS;
 
     if (force) {
       await refreshPlayerMatches(playerName, { shard, limit });
@@ -49,7 +56,10 @@ export async function GET(req: Request, { params }: { params: { playerName: stri
   } catch (err: any) {
     console.error('player-matches GET error:', err);
     return NextResponse.json(
-      { error: 'Failed to fetch cached matches', details: String(err?.message ?? err) },
+      {
+        error: 'Failed to fetch cached matches',
+        details: String(err?.message ?? err),
+      },
       { status: 500 }
     );
   }
