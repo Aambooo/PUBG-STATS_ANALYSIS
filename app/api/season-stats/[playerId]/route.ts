@@ -1,9 +1,9 @@
 // app/api/season-stats/[playerId]/route.ts
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { getCurrentSeasonId, getPlayerSeasonStats } from '@/lib/pubg-api';
 
 export async function GET(
-  req: Request,
+  req: NextRequest,
   context: { params: { playerId: string } }
 ) {
   try {
