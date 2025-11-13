@@ -4,14 +4,16 @@ import PlayerMatches from '@/components/PlayerMatches';
 import SeasonStats from '@/components/SeasonStats';
 import MatchTrends from '@/components/MatchTrends';
 
+// In Next.js 15, params is a *Promise*.
+type PlayerPageParams = Promise<{ playerName: string }>;
 
-
-interface PlayerPageProps {
-  params: { playerName: string };
-}
-
-export default async function PlayerPage({ params }: PlayerPageProps) {
-  const { playerName } = params;
+export default async function PlayerPage({
+  params,
+}: {
+  params: PlayerPageParams;
+}) {
+  // Await the params to get the actual value
+  const { playerName } = await params;
 
   try {
     // Search for the player
@@ -31,7 +33,10 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
         {/* Navbar */}
         <header className="fixed top-0 left-0 right-0 z-30 bg-neutral-900/60 backdrop-blur-md border-b border-neutral-800">
           <div className="w-full px-6 py-4 flex justify-between items-center">
-            <a href="/" className="text-2xl font-bold text-yellow-500 font-['Oswald'] tracking-wider">
+            <a
+              href="/"
+              className="text-2xl font-bold text-yellow-500 font-['Oswald'] tracking-wider"
+            >
               STAT ARENA
             </a>
           </div>
@@ -62,21 +67,29 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
 
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-5xl font-bold text-white mb-2">{playerData.name}</h1>
+            <h1 className="text-5xl font-bold text-white mb-2">
+              {playerData.name}
+            </h1>
             <p className="text-gray-400">Player ID: {playerId}</p>
           </div>
 
           {/* Basic Info Card */}
           <div className="bg-neutral-900/50 backdrop-blur-md rounded-xl p-6 border border-neutral-700 mb-8">
-            <h2 className="text-2xl font-bold text-white mb-4">Player Information</h2>
+            <h2 className="text-2xl font-bold text-white mb-4">
+              Player Information
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <p className="text-gray-400">Platform</p>
-                <p className="text-white text-xl font-semibold">{playerData.shardId}</p>
+                <p className="text-white text-xl font-semibold">
+                  {playerData.shardId}
+                </p>
               </div>
               <div>
                 <p className="text-gray-400">Status</p>
-                <p className="text-white text-xl font-semibold">{playerData.banType}</p>
+                <p className="text-white text-xl font-semibold">
+                  {playerData.banType}
+                </p>
               </div>
               {playerData.clanId && (
                 <div>
@@ -101,7 +114,6 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
           <div className="bg-neutral-900/50 backdrop-blur-md rounded-xl p-6 border border-neutral-700 mb-8">
             <MatchTrends playerName={playerData.name} limit={20} />
           </div>
-
 
           {/* Match History Section (cached, up to 20) */}
           <div className="bg-neutral-900/50 backdrop-blur-md rounded-xl p-6 border border-neutral-700">
