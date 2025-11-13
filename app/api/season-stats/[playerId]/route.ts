@@ -1,18 +1,16 @@
 // app/api/season-stats/[playerId]/route.ts
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentSeasonId, getPlayerSeasonStats } from '@/lib/pubg-api';
 
-export async function GET(
-  req: NextRequest,
-  context: { params: Promise<{ playerId: string }> }
-) {
+export async function GET(req: NextRequest) {
   try {
-    // Await the params
-    const params = await context.params;
-    const playerId = decodeURIComponent(params.playerId);
-    
     const url = new URL(req.url);
     const shard = url.searchParams.get('shard') ?? 'steam';
+
+    // Extract [playerId] from the path: /api/season-stats/<playerId>
+    const segments = req.nextUrl.pathname.split('/');
+    const playerIdSlug = segments[segments.length - 1] || '';
+    const playerId = decodeURIComponent(playerIdSlug);
 
     // 1) which season is current?
     const seasonId = await getCurrentSeasonId(shard);
@@ -50,10 +48,10 @@ export async function GET(
           {
             roundsPlayed: rounds,
             wins,
-            winRate,       // %
+            winRate,      // %
             kills,
-            kd,            // approx K/D
-            adr,           // avg damage / round
+            kd,           // approx K/D
+            adr,          // avg damage / round
             top10s,
             assists,
             damageDealt: damage,
